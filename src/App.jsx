@@ -7,6 +7,7 @@ import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Text } from "@astryxdesign/core/Text";
+import { Theme } from "@astryxdesign/core/theme";
 import { VStack } from "@astryxdesign/core/VStack";
 import { BarChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
@@ -14,7 +15,7 @@ import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-
+import { defaultThemeSlug, themes } from "../astryx-themes.js";
 import { JOURNEY } from "./data/journey.js";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Moon, MoreHorizontal, Sun, X } from "./icons.jsx";
 
@@ -210,7 +211,7 @@ function ProgressChart({ rows, theme }) {
 
 /* ---------- dialog nama ---------- */
 
-function NameDialog({ open, initial, member, onCancel, onSubmit }) {
+function NameDialog({ open, initial, member, isEntry, onCancel, onSubmit }) {
   const ref = useRef(null);
   const input = useRef(null);
   const [value, setValue] = useState(initial);
@@ -230,7 +231,12 @@ function NameDialog({ open, initial, member, onCancel, onSubmit }) {
   }, [open]);
 
   return (
-    <dialog ref={ref} className="dlg" onClose={onCancel} aria-label="Ganti nama panggilan">
+    <dialog
+      ref={ref}
+      className="dlg"
+      onClose={onCancel}
+      aria-label={isEntry ? "Pilih nama panggilan" : "Ganti nama panggilan"}
+    >
       <form
         method="dialog"
         className="dlg-body"
@@ -239,8 +245,14 @@ function NameDialog({ open, initial, member, onCancel, onSubmit }) {
           onSubmit(value.trim().slice(0, 24));
         }}
       >
-        <Heading level={2}>Ganti nama panggilan, {member ? member.code : "anggota"}</Heading>
-        <p className="muted">Nama dipakai untuk sapaan di journey. Kosongkan untuk memakai kode anggota.</p>
+        <Heading level={2}>
+          {isEntry ? "Nama panggilanmu?" : `Ganti nama panggilan, ${member ? member.code : "anggota"}`}
+        </Heading>
+        <p className="muted">
+          {isEntry
+            ? `Kamu masuk sebagai ${member ? member.code : "anggota"}. Nama ini hanya untuk sapaan; kosongkan untuk tetap memakai kode.`
+            : "Nama dipakai untuk sapaan di journey. Kosongkan untuk memakai kode anggota."}
+        </p>
         <label className="field">
           <span>Nama panggilan</span>
           <input
@@ -410,9 +422,9 @@ function MemberCard({ member, progress, onPick }) {
 
 /* ---------- thumbnails ---------- */
 
-function Thumbs({ ids, onOpen }) {
+function Thumbs({ ids, onOpen, compact = false }) {
   return (
-    <div className="thumbs">
+    <div className={compact ? "thumbs compact" : "thumbs"}>
       {ids.map((id) => (
         <button
           key={id}
@@ -578,7 +590,7 @@ function ContextPanel({ member, nameOf, onShot }) {
         <Divider />
         <VStack gap={1}>
           <Text type="label">Expected result</Text>
-          <Thumbs ids={member.screens} onOpen={onShot} />
+          <Thumbs ids={member.screens} onOpen={onShot} compact />
         </VStack>
         <Divider />
         <VStack gap={1}>
@@ -678,19 +690,12 @@ export default function App() {
     const order = ["light", "dark"];
     const next = order[(order.indexOf(store.theme) + 1) % order.length];
     const apply = () => {
-      flushSync(() => {
-        document.documentElement.style.colorScheme = next;
-        save({ ...store, theme: next });
-      });
+      flushSync(() => save({ ...store, theme: next }));
     };
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (typeof document.startViewTransition === "function" && !reduced) document.startViewTransition(apply);
     else apply();
   }, [save, store]);
-
-  useEffect(() => {
-    document.documentElement.style.colorScheme = store.theme;
-  }, [store.theme]);
 
   const nameOf = useCallback(
     (target) => {
@@ -712,12 +717,9 @@ export default function App() {
     [transition],
   );
 
-  const pick = useCallback(
-    (target) => {
-      enter(target);
-    },
-    [enter],
-  );
+  const pick = useCallback((target) => {
+    setNameAsk({ member: target, enter: true });
+  }, []);
 
   const active = member && stepId ? findStep(member, stepId) : null;
   const activeIndex = active ? steps.findIndex((item) => item.id === active.step.id) : -1;
@@ -768,10 +770,12 @@ export default function App() {
   };
 
   const submitName = (name) => {
-    const target = nameAsk;
+    const ask = nameAsk;
     setNameAsk(null);
-    if (!target) return;
+    if (!ask) return;
+    const target = ask.member;
     if (name) save({ ...store, names: { ...store.names, [target.code]: name } });
+    if (ask.enter) enter(target);
   };
 
   const progress = member ? progressOf(member) : null;
@@ -798,299 +802,318 @@ export default function App() {
   const chartRows = JOURNEY.members.map((item) => ({ code: item.code, pct: progressOf(item).pct }));
 
   return (
-    <div className="page">
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="brand">
-            <span className="brand-mark" aria-hidden="true">
-              GQ
-            </span>
-            <VStack gap={0}>
-              <Text type="body" weight="bold">
-                GachaQuest
-              </Text>
-              <Text type="supporting">Tutor Tim</Text>
-            </VStack>
-          </div>
+    <Theme theme={themes[defaultThemeSlug]} mode={store.theme}>
+      <div className="page">
+        <header className="topbar">
+          <div className="topbar-inner">
+            <div className="brand">
+              <span className="brand-mark" aria-hidden="true">
+                GQ
+              </span>
+              <VStack gap={0}>
+                <Text type="body" weight="bold">
+                  GachaQuest
+                </Text>
+                <Text type="supporting">Tutor Tim</Text>
+              </VStack>
+            </div>
 
-          <div className="topbar-progress">
-            {member && progress ? (
-              <ProgressBar
-                label={`Progres ${member.code}`}
-                value={progress.done}
-                max={progress.total}
-                hasValueLabel
-                formatValueLabel={(value, max) => `${value}/${max} langkah`}
-              />
-            ) : null}
-          </div>
-
-          <div className="topbar-actions">
-            {member ? (
-              <HStack gap={0.5} align="center">
-                <Button label="Pilih anggota" variant="ghost" size="sm" onClick={goToPicker} />
-                <Button label="Ganti nama" variant="ghost" size="sm" onClick={() => setNameAsk(member)} />
-                <DropdownMenu
-                  button={{
-                    label: "Aksi lain",
-                    tooltip: "Aksi lain",
-                    icon: <MoreHorizontal />,
-                    variant: "ghost",
-                    size: "sm",
-                    isIconOnly: true,
-                  }}
-                  hasChevron={false}
-                  placement="below"
-                  alignment="end"
-                  items={[
-                    {
-                      id: "reset-progress",
-                      label: "Reset progres",
-                      variant: "destructive",
-                      onClick: () => setResetAsk(member),
-                    },
-                  ]}
+            <div className="topbar-progress">
+              {member && progress ? (
+                <ProgressBar
+                  label={`Progres ${member.code}`}
+                  value={progress.done}
+                  max={progress.total}
+                  hasValueLabel
+                  formatValueLabel={(value, max) => `${value}/${max} langkah`}
                 />
-              </HStack>
-            ) : null}
-            <Button
-              className="topbar-theme"
-              label={themeAction}
-              tooltip={themeAction}
-              icon={themeMeta.icon}
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              onClick={cycleTheme}
-            />
-          </div>
-        </div>
-      </header>
-
-      <main className="main">
-        {view === "picker" || !member || !progress ? (
-          <div className="picker">
-            <VStack gap={4}>
-              <div className="hero">
-                <VStack gap={1}>
-                  <Text type="label">Panduan kerja tim · UAS Dasar Pemrograman</Text>
-                  <Heading level={1} type="display-1">
-                    Pilih anggota, ikuti journey, buktikan hasil.
-                  </Heading>
-                  <p className="hero-sub">
-                    Lima peran, satu program. Setiap kartu memuat langkah dari baca panduan, tulis modul,
-                    jalankan test, sampai expected result yang bisa ditunjukkan saat demo.
-                  </p>
-                </VStack>
-              </div>
-
-              <div className="overview">
-                <div className="chart-card">
-                  <Card padding={3} elevation="low">
-                    <VStack gap={1}>
-                      <Heading level={2}>Progres tiap anggota</Heading>
-                      <p className="muted">
-                        Angka diambil dari centang milestone yang kamu simpan di browser.
-                      </p>
-                      <ProgressChart rows={chartRows} theme={resolvedTheme} />
-                    </VStack>
-                  </Card>
-                </div>
-                <div className="diagram-card">
-                  <Card padding={3} elevation="low">
-                    <VStack gap={1}>
-                      <Heading level={2}>Alur fase proyek</Heading>
-                      <p className="muted">
-                        F0 fondasi dikerjakan semua orang, lalu modul paralel, integrasi, dan rilis.
-                      </p>
-                      <img
-                        className="diagram-img"
-                        src={`/assets/journey-flow-${resolvedTheme}.svg`}
-                        alt="Diagram alur fase: contract-v1, ui-ready, modul paralel, integrasi, rilis"
-                        width="918"
-                        height="416"
-                      />
-                    </VStack>
-                  </Card>
-                </div>
-              </div>
-
-              <div className="member-grid">
-                {JOURNEY.members.map((item) => (
-                  <MemberCard
-                    key={item.code}
-                    member={item}
-                    progress={progressOf(item)}
-                    onPick={() => pick(item)}
-                  />
-                ))}
-              </div>
-              <p className="muted">
-                Tip: tekan <kbd>1</kbd>–<kbd>5</kbd> untuk memilih anggota.
-              </p>
-            </VStack>
-          </div>
-        ) : (
-          <div className="journey">
-            <VStack gap={3}>
-              <div className="journey-head">
-                <HStack gap={2} align="center" justify="between" wrap="wrap">
-                  <HStack gap={2} align="center">
-                    <Button label="Pilih anggota" icon={<ArrowLeft />} variant="ghost" onClick={goToPicker} />
-                    <VStack gap={0}>
-                      <Heading level={1}>Halo, {nameOf(member)}</Heading>
-                      <Text type="supporting">
-                        {member.code} · {member.role} · {progress.done} dari {progress.total} langkah selesai
-                      </Text>
-                    </VStack>
-                  </HStack>
-                  <div className="journey-score">
-                    <Text type="label">Progres journey</Text>
-                    <span className="score-value">{progress.pct}%</span>
-                    <ProgressBar
-                      label="Progres journey anggota"
-                      value={progress.pct}
-                      max={100}
-                      isLabelHidden
-                    />
-                  </div>
-                </HStack>
-                <div className="drawer-trigger" ref={stepsTriggerRef}>
-                  <Button label="Langkah" variant="secondary" size="sm" onClick={() => setDrawer("steps")} />
-                </div>
-                <div className="drawer-trigger" ref={infoTriggerRef}>
-                  <Button label="Info" variant="secondary" size="sm" onClick={() => setDrawer("context")} />
-                </div>
-              </div>
-
-              <div className="journey-layout">
-                <div className="timeline">
-                  <TimelinePanel
-                    member={member}
-                    stepId={stepId}
-                    doneOf={doneOf}
-                    unlockedIds={unlockedIds}
-                    onSelect={selectStep}
-                  />
-                </div>
-
-                <div className="detail" id="detail" ref={detailRef}>
-                  <Card padding={3} elevation="low">
-                    {active ? (
-                      <Detail
-                        member={member}
-                        phase={active.phase}
-                        step={active.step}
-                        isDone={activeDone}
-                        canToggle={canToggle}
-                        canGoNext={canGoNext}
-                        position={{ index: activeIndex + 1, total: steps.length }}
-                        copied={copied}
-                        onCopy={async (code) => {
-                          try {
-                            await navigator.clipboard.writeText(code);
-                          } catch {
-                            /* clipboard ditolak; tombol tetap memberi umpan balik */
-                          }
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 1600);
-                        }}
-                        onToggle={() => toggle(active.step.id)}
-                        onPrev={prevStep ? () => selectStep(prevStep.id) : undefined}
-                        onNext={nextStep ? () => selectStep(nextStep.id) : undefined}
-                        onShot={(ids, index) => setShot({ ids, index })}
-                      />
-                    ) : null}
-                  </Card>
-                </div>
-
-                <div className="context">
-                  <ContextPanel
-                    member={member}
-                    nameOf={nameOf}
-                    onShot={(ids, index) => setShot({ ids, index })}
-                  />
-                </div>
-              </div>
-
-              {drawer ? (
-                <dialog
-                  ref={drawerRef}
-                  className="drawer"
-                  aria-label={drawer === "steps" ? "Daftar langkah" : "Konteks anggota"}
-                  onClose={() => setDrawer(null)}
-                  onClick={(event) => {
-                    if (event.target === event.currentTarget) closeDrawer();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") closeDrawer();
-                  }}
-                >
-                  <div className="drawer-head">
-                    <Text type="label">{drawer === "steps" ? "Daftar langkah" : "Konteks anggota"}</Text>
-                    <Button
-                      label="Tutup"
-                      icon={<X />}
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      onClick={closeDrawer}
-                    />
-                  </div>
-                  <div className="drawer-body">
-                    {drawer === "steps" ? (
-                      <TimelinePanel
-                        member={member}
-                        stepId={stepId}
-                        doneOf={doneOf}
-                        unlockedIds={unlockedIds}
-                        onSelect={selectStep}
-                      />
-                    ) : (
-                      <ContextPanel
-                        member={member}
-                        nameOf={nameOf}
-                        onShot={(ids, index) => setShot({ ids, index })}
-                      />
-                    )}
-                  </div>
-                </dialog>
               ) : null}
-            </VStack>
-          </div>
-        )}
-      </main>
-      <CursorGlow />
+            </div>
 
-      <NameDialog
-        open={Boolean(nameAsk)}
-        member={nameAsk}
-        initial={nameAsk ? (store.names[nameAsk.code] ?? "") : ""}
-        onCancel={() => setNameAsk(null)}
-        onSubmit={submitName}
-      />
-      <ResetDialog
-        member={resetAsk}
-        onCancel={() => setResetAsk(null)}
-        onConfirm={() => {
-          if (!resetAsk) return;
-          save({ ...store, done: { ...store.done, [resetAsk.code]: [] } });
-          setResetAsk(null);
-        }}
-      />
-      <ShotDialog
-        shots={shot?.ids}
-        index={shot?.index ?? 0}
-        onClose={() => setShot(null)}
-        onStep={(delta) => {
-          setShot((current) => {
-            if (!current) return current;
-            const next = (current.index + delta + current.ids.length) % current.ids.length;
-            return { ...current, index: next };
-          });
-        }}
-      />
-    </div>
+            <div className="topbar-actions">
+              {member ? (
+                <HStack gap={0.5} align="center">
+                  <Button label="Pilih anggota" variant="ghost" size="sm" onClick={goToPicker} />
+                  <Button
+                    label="Ganti nama"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setNameAsk({ member, enter: false })}
+                  />
+                  <DropdownMenu
+                    button={{
+                      label: "Aksi lain",
+                      tooltip: "Aksi lain",
+                      icon: <MoreHorizontal />,
+                      variant: "ghost",
+                      size: "sm",
+                      isIconOnly: true,
+                    }}
+                    hasChevron={false}
+                    placement="below"
+                    alignment="end"
+                    items={[
+                      {
+                        id: "reset-progress",
+                        label: "Reset progres",
+                        variant: "destructive",
+                        onClick: () => setResetAsk(member),
+                      },
+                    ]}
+                  />
+                </HStack>
+              ) : null}
+              <Button
+                className="topbar-theme"
+                label={themeAction}
+                tooltip={themeAction}
+                icon={themeMeta.icon}
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                onClick={cycleTheme}
+              />
+            </div>
+          </div>
+        </header>
+
+        <main className="main">
+          {view === "picker" || !member || !progress ? (
+            <div className="picker">
+              <VStack gap={4}>
+                <div className="hero">
+                  <VStack gap={1}>
+                    <Text type="label">Panduan kerja tim · UAS Dasar Pemrograman</Text>
+                    <Heading level={1} type="display-1">
+                      Pilih anggota, ikuti journey, buktikan hasil.
+                    </Heading>
+                    <p className="hero-sub">
+                      Lima peran, satu program. Setiap kartu memuat langkah dari baca panduan, tulis modul,
+                      jalankan test, sampai expected result yang bisa ditunjukkan saat demo.
+                    </p>
+                  </VStack>
+                </div>
+
+                <div className="overview">
+                  <div className="chart-card">
+                    <Card padding={3} elevation="low">
+                      <VStack gap={1}>
+                        <Heading level={2}>Progres tiap anggota</Heading>
+                        <p className="muted">
+                          Angka diambil dari centang milestone yang kamu simpan di browser.
+                        </p>
+                        <ProgressChart rows={chartRows} theme={resolvedTheme} />
+                      </VStack>
+                    </Card>
+                  </div>
+                  <div className="diagram-card">
+                    <Card padding={3} elevation="low">
+                      <VStack gap={1}>
+                        <Heading level={2}>Alur fase proyek</Heading>
+                        <p className="muted">
+                          F0 fondasi dikerjakan semua orang, lalu modul paralel, integrasi, dan rilis.
+                        </p>
+                        <img
+                          className="diagram-img"
+                          src={`/assets/journey-flow-${resolvedTheme}.svg`}
+                          alt="Diagram alur fase: contract-v1, ui-ready, modul paralel, integrasi, rilis"
+                          width="918"
+                          height="416"
+                        />
+                      </VStack>
+                    </Card>
+                  </div>
+                </div>
+
+                <div className="member-grid">
+                  {JOURNEY.members.map((item) => (
+                    <MemberCard
+                      key={item.code}
+                      member={item}
+                      progress={progressOf(item)}
+                      onPick={() => pick(item)}
+                    />
+                  ))}
+                </div>
+                <p className="muted">
+                  Tip: tekan <kbd>1</kbd>–<kbd>5</kbd> untuk memilih anggota.
+                </p>
+              </VStack>
+            </div>
+          ) : (
+            <div className="journey">
+              <VStack gap={3}>
+                <div className="journey-head">
+                  <HStack gap={2} align="center" justify="between" wrap="wrap">
+                    <HStack gap={2} align="center">
+                      <Button
+                        label="Pilih anggota"
+                        icon={<ArrowLeft />}
+                        variant="ghost"
+                        onClick={goToPicker}
+                      />
+                      <VStack gap={0}>
+                        <Heading level={1}>Halo, {nameOf(member)}</Heading>
+                        <Text type="supporting">
+                          {member.code} · {member.role} · {progress.done} dari {progress.total} langkah
+                          selesai
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    <div className="journey-score">
+                      <Text type="label">Progres journey</Text>
+                      <span className="score-value">{progress.pct}%</span>
+                      <ProgressBar
+                        label="Progres journey anggota"
+                        value={progress.pct}
+                        max={100}
+                        isLabelHidden
+                      />
+                    </div>
+                  </HStack>
+                  <div className="drawer-trigger" ref={stepsTriggerRef}>
+                    <Button
+                      label="Langkah"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setDrawer("steps")}
+                    />
+                  </div>
+                  <div className="drawer-trigger" ref={infoTriggerRef}>
+                    <Button label="Info" variant="secondary" size="sm" onClick={() => setDrawer("context")} />
+                  </div>
+                </div>
+
+                <div className="journey-layout">
+                  <div className="timeline">
+                    <TimelinePanel
+                      member={member}
+                      stepId={stepId}
+                      doneOf={doneOf}
+                      unlockedIds={unlockedIds}
+                      onSelect={selectStep}
+                    />
+                  </div>
+
+                  <div className="detail" id="detail" ref={detailRef}>
+                    <Card padding={3} elevation="low">
+                      {active ? (
+                        <Detail
+                          member={member}
+                          phase={active.phase}
+                          step={active.step}
+                          isDone={activeDone}
+                          canToggle={canToggle}
+                          canGoNext={canGoNext}
+                          position={{ index: activeIndex + 1, total: steps.length }}
+                          copied={copied}
+                          onCopy={async (code) => {
+                            try {
+                              await navigator.clipboard.writeText(code);
+                            } catch {
+                              /* clipboard ditolak; tombol tetap memberi umpan balik */
+                            }
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1600);
+                          }}
+                          onToggle={() => toggle(active.step.id)}
+                          onPrev={prevStep ? () => selectStep(prevStep.id) : undefined}
+                          onNext={nextStep ? () => selectStep(nextStep.id) : undefined}
+                          onShot={(ids, index) => setShot({ ids, index })}
+                        />
+                      ) : null}
+                    </Card>
+                  </div>
+
+                  <div className="context">
+                    <ContextPanel
+                      member={member}
+                      nameOf={nameOf}
+                      onShot={(ids, index) => setShot({ ids, index })}
+                    />
+                  </div>
+                </div>
+
+                {drawer ? (
+                  <dialog
+                    ref={drawerRef}
+                    className="drawer"
+                    aria-label={drawer === "steps" ? "Daftar langkah" : "Konteks anggota"}
+                    onClose={() => setDrawer(null)}
+                    onClick={(event) => {
+                      if (event.target === event.currentTarget) closeDrawer();
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") closeDrawer();
+                    }}
+                  >
+                    <div className="drawer-head">
+                      <Text type="label">{drawer === "steps" ? "Daftar langkah" : "Konteks anggota"}</Text>
+                      <Button
+                        label="Tutup"
+                        icon={<X />}
+                        variant="ghost"
+                        size="sm"
+                        isIconOnly
+                        onClick={closeDrawer}
+                      />
+                    </div>
+                    <div className="drawer-body">
+                      {drawer === "steps" ? (
+                        <TimelinePanel
+                          member={member}
+                          stepId={stepId}
+                          doneOf={doneOf}
+                          unlockedIds={unlockedIds}
+                          onSelect={selectStep}
+                        />
+                      ) : (
+                        <ContextPanel
+                          member={member}
+                          nameOf={nameOf}
+                          onShot={(ids, index) => setShot({ ids, index })}
+                        />
+                      )}
+                    </div>
+                  </dialog>
+                ) : null}
+              </VStack>
+            </div>
+          )}
+        </main>
+        <CursorGlow />
+
+        <NameDialog
+          open={Boolean(nameAsk)}
+          member={nameAsk?.member}
+          isEntry={Boolean(nameAsk?.enter)}
+          initial={nameAsk ? (store.names[nameAsk.member.code] ?? "") : ""}
+          onCancel={() => setNameAsk(null)}
+          onSubmit={submitName}
+        />
+        <ResetDialog
+          member={resetAsk}
+          onCancel={() => setResetAsk(null)}
+          onConfirm={() => {
+            if (!resetAsk) return;
+            save({ ...store, done: { ...store.done, [resetAsk.code]: [] } });
+            setResetAsk(null);
+          }}
+        />
+        <ShotDialog
+          shots={shot?.ids}
+          index={shot?.index ?? 0}
+          onClose={() => setShot(null)}
+          onStep={(delta) => {
+            setShot((current) => {
+              if (!current) return current;
+              const next = (current.index + delta + current.ids.length) % current.ids.length;
+              return { ...current, index: next };
+            });
+          }}
+        />
+      </div>
+    </Theme>
   );
 }
 
