@@ -2,6 +2,21 @@
 
 Tutor web interaktif untuk tim UAS Dasar Pemrograman yang mengerjakan game GachaQuest. Setiap anggota memilih kartu `P1` sampai `P5`, mengikuti journey kerja per fase, membaca perintah yang bisa disalin, memverifikasi expected result lewat screenshot, dan menandai milestone yang sudah selesai. Progres tersimpan di browser tanpa backend.
 
+## Daftar isi
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Install](#install)
+- [Usage](#usage)
+- [Reading the fields](#reading-the-fields)
+- [What it reads / touches](#what-it-reads--touches)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Security notes](#security-notes)
+- [License](#license)
+
 ## Features
 
 - Picker lima anggota: `P1`, `P2`, `P3`, `P4`, `P5` dengan peran, level, branch, file milik, dan target layar.
@@ -165,14 +180,13 @@ Deployment target: Cloudflare Pages dengan Git integration. Detail lengkap ada d
 
 ## Troubleshooting
 
-| Symptom                                               | Cause                                                   | Fix                                                                                                          |
-| ----------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `Node.js v22.x.x is not installed or cannot be found` | `.nvmrc` lama memaksa versi Node yang tidak ada.        | Hapus `.nvmrc` atau pakai Bun untuk semua perintah.                                                          |
-| Port `5183` dipakai                                   | Dev server lain masih hidup.                            | Matikan proses Vite lain atau ganti `server.port` di `vite.config.js`.                                       |
-| Screenshot 404 di preview produksi                    | Build tidak menyalin `public/assets`.                   | Jalankan `bun run smoke`; smoke akan gagal jika aset tidak ada di `dist/`.                                   |
-| Diagram tidak berubah warna                           | SVG tidak dipilih sesuai tema.                          | Pastikan `resolvedTheme` di `src/App.jsx` mengarah ke `journey-flow-light.svg` atau `journey-flow-dark.svg`. |
-| Progres hilang                                        | `localStorage` dibersihkan browser atau domain berbeda. | Progres memang tersimpan per origin; pilih anggota lagi dan tandai milestone.                                |
-| `bun run check` gagal pada SVG                        | Linter memindai aset hasil generate.                    | `public/assets` sudah dikecualikan di `biome.json`.                                                          |
+| Symptom                            | Cause                                                   | Fix                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Port `5183` dipakai                | Dev server lain masih hidup.                            | Matikan proses Vite lain atau ganti `server.port` di `vite.config.js`.                                       |
+| Screenshot 404 di preview produksi | Build tidak menyalin `public/assets`.                   | Jalankan `bun run smoke`; smoke akan gagal jika aset tidak ada di `dist/`.                                   |
+| Diagram tidak berubah warna        | SVG tidak dipilih sesuai tema.                          | Pastikan `resolvedTheme` di `src/App.jsx` mengarah ke `journey-flow-light.svg` atau `journey-flow-dark.svg`. |
+| Progres hilang                     | `localStorage` dibersihkan browser atau domain berbeda. | Progres memang tersimpan per origin; pilih anggota lagi dan tandai milestone.                                |
+| `bun run check` gagal pada SVG     | Linter memindai aset hasil generate.                    | `public/assets` sudah dikecualikan di `biome.json`.                                                          |
 
 ## Security notes
 
