@@ -131,7 +131,7 @@ Web-Tutor-GachaQuest/
     icons.jsx
     data/journey.js
   public/
-    _redirects
+    _headers
     assets/screens/*.png
     assets/journey-flow-{light,dark}.svg
   docs/
