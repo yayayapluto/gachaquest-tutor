@@ -7,9 +7,9 @@ Deployment memakai Git integration. Push ke branch produksi = deploy. Tidak ada 
 1. Buka **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
 2. Pilih repo `gachaquest-tutor`.
 3. Preset: **Vite**.
-4. Build command: `npm run build`.
+4. Build command: `bun run build`.
 5. Build output directory: `dist`.
-6. Environment variable: `NODE_VERSION=22`.
+6. Environment variable: `BUN_VERSION=1.3.14`.
 7. Simpan dan deploy.
 
 ## Verifikasi setelah deploy
