@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .agents/
+AGENTS.md
+GEMINI.md
 .tmp/
 PROMPT.md
 .DS_Store
