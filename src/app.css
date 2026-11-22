@@ -96,13 +96,16 @@ body {
 }
 
 .picker {
-  max-width: 1560px;
-  margin: 0 auto;
   padding: 40px 32px 56px;
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+
+.picker > .astryx-stack {
+  max-width: 1496px;
+  margin: 0 auto;
 }
 
 .journey {
