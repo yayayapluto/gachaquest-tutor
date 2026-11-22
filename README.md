@@ -195,6 +195,7 @@ Deployment target: Cloudflare Workers Builds dengan Git integration. Detail leng
 - Tidak ada backend, autentikasi, atau request jaringan dari aplikasi.
 - Hanya `localStorage` yang menyimpan data pengguna; reset progres menghapus data tersebut.
 - Tautan eksternal memakai `rel="noopener noreferrer"`.
+- `public/_headers` memasang `nosniff`, `Referrer-Policy`, `Permissions-Policy`, dan `X-Frame-Options`.
 - Jangan menaruh kredensial di repo; aplikasi tidak membutuhkannya.
 
 ## License
