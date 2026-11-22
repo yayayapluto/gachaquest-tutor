@@ -1,16 +1,18 @@
-# Deploy Cloudflare Pages
+# Deploy Cloudflare Workers Builds
 
-Deployment memakai Git integration. Push ke branch produksi = deploy. Tidak ada Actions, token, atau secret.
+Deployment memakai Git integration Cloudflare Workers Builds. Push ke branch produksi menjalankan build lalu deploy Worker aset statis. Tidak ada Actions, token, atau secret di repo.
 
 ## Pengaturan di Cloudflare
 
-1. Buka **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+1. Buka **Workers & Pages** → **Create** → **Workers** → **Connect to Git**.
 2. Pilih repo `gachaquest-tutor`.
-3. Preset: **Vite**.
-4. Build command: `bun run build`.
-5. Build output directory: `dist`.
+3. Build command: `bun run build`.
+4. Deploy command: `bunx wrangler deploy`.
+5. Preview command: `bunx wrangler versions upload`.
 6. Environment variable: `BUN_VERSION=1.3.14`.
 7. Simpan dan deploy.
+
+`wrangler.jsonc` mengarahkan Worker ke `dist` dan memakai `not_found_handling: single-page-application` untuk fallback SPA.
 
 ## Verifikasi setelah deploy
 
@@ -22,6 +24,6 @@ Deployment memakai Git integration. Push ke branch produksi = deploy. Tidak ada 
 
 ## Catatan lokal
 
-- `public/assets/screens/` disalin Vite ke `dist/assets/screens/`.
-- `public/_redirects` memberi fallback SPA ke `index.html`.
+- `public/assets/` disalin Vite ke `dist/assets/`.
 - `bun run smoke` membangun `dist/` lalu memeriksa 18 screenshot dan 2 diagram di dalam `dist/`.
+- Uji konfigurasi Worker tanpa upload: `bunx wrangler deploy --dry-run`.
