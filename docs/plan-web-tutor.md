@@ -1,6 +1,6 @@
-# Plan — Web Tutor GachaQuest
+# Plan: Web Tutor GachaQuest
 
-Status: **menunggu persetujuan** (belum ada implementasi).
+Status: **terimplementasi** sebagai React 19 + Vite (revisi dari rencana HTML statis; lihat Decisions).
 Tanggal: 2026-11-22.
 
 ## 1. Tujuan
@@ -17,7 +17,7 @@ tersimpan, expected result tampil sebagai teks + screenshot target.
 ## 2. Non-tujuan
 
 - Bukan pengganti repo panduan. Semua isi panduan tetap di `1-Panduan-GachaQuest/docs/`.
-- Tidak ada backend, login, database, atau build tool. Tanpa dependency eksternal.
+- Tidak ada backend, login, atau database. Build tool dan dependency tetap dipakai untuk UI.
 - Tidak menyentuh `GachaQuest/` dan tidak menulis ke dua repo sumber.
 
 ## 3. Sumber data (read-only)
@@ -32,7 +32,7 @@ tersimpan, expected result tampil sebagai teks + screenshot target.
 | `../1-Panduan-GachaQuest/docs/panduan-P5-shop-storage.md` (Milestone 1–6) | journey P5 |
 | `../1-Panduan-GachaQuest/docs/PEMBAGIAN-TUGAS.md` | peran, file milik, fase F0–F4, DoD, pemetaan materi |
 | `../1-Panduan-GachaQuest/docs/screens.md` | nama 18 layar target |
-| `../2-Expected-Result-GachaQuest/docs/screens/*.png` | bukti visual expected result (disalin ke `assets/screens/`) |
+| `../2-Expected-Result-GachaQuest/docs/screens/*.png` | bukti visual expected result (disalin ke `public/assets/screens/`) |
 
 Nama anggota belum ada di dokumen mana pun; identitas yang dipakai adalah kode
 peran P1–P5 beserta perannya. Plan ini tidak mengarang nama orang.
@@ -41,16 +41,23 @@ peran P1–P5 beserta perannya. Plan ini tidak mengarang nama orang.
 
 ```
 Web-Tutor-GachaQuest/
-  index.html            # tiga layar dalam satu dokumen (picker, journey, lightbox)
-  styles.css            # token warna/tipe/spasi + layout
-  app.js                # render data, navigasi, progres localStorage
-  data/journey.js       # window.JOURNEY — data journey P1–P5 (bukan fetch, agar file:// jalan)
-  assets/screens/*.png  # 18 screenshot target, disalin dari repo expected result
+  index.html              # entry Vite, mount #root
+  vite.config.js          # dev 5183, preview 5184
+  astryx-themes.js        # tema neutral hasil `astryx theme add neutral`
+  src/
+    main.jsx              # Theme Astryx + reset.css + astryx.css
+    App.jsx               # picker, journey, dialog nama/reset, lightbox, chart ECharts
+    app.css               # komposisi kustom: timeline, detail, kartu anggota, dialog
+    data/journey.js       # export JOURNEY, data journey P1–P5
+  public/assets/screens/*.png    # 18 screenshot target
+  public/assets/journey-flow-{light,dark}.svg   # diagram fase per tema
+  docs/journey-flow.mmd   # sumber diagram
+  docs/build-flow.mjs     # kompilasi pele + palet dua tema
   docs/plan-web-tutor.md
 ```
 
-`data/journey.js` dipilih, bukan `journey.json`, karena `fetch()` atas `file://`
-gagal di Chrome. Satu `<script>` menetapkan `window.JOURNEY`.
+Data journey tetap modul JS (bukan `fetch`) agar bundel Vite tidak butuh server API.
+Satu sumber data dipakai picker, timeline, detail, dan hitungan progres.
 
 ## 5. Model data
 
@@ -110,7 +117,7 @@ Expected result per anggota:
 
 | Anggota | Driver | Skenario | Layar target |
 |---|---|---|---|
-| P1 | `bin/t_platform` | — | 01–05, 17 (menu, game baru, load, hub, simpan) |
+| P1 | `bin/t_platform` | tidak ada | 01–05, 17 (menu, game baru, load, hub, simpan) |
 | P2 | `bin/t_dungeon` | S12, S13, S14, S16 | 16 |
 | P3 | `bin/t_player`, `bin/t_battle` | battle/player | 06, 07, 08 |
 | P4 | `bin/t_gacha`, `bin/t_inventory` | gacha/inventory | 09–13 |
@@ -118,31 +125,31 @@ Expected result per anggota:
 
 ## 7. Layar dan interaksi
 
-**Layar 1 — Pilih anggota.** Lima kartu besar (P1–P5): kode, peran, level,
+**Layar 1: Pilih anggota.** Lima kartu besar (P1–P5): kode, peran, level,
 daftar file milik, jumlah step, cincin progres. Klik kartu → layar 2. Tombol
 `1`–`5` di keyboard memilih kartu.
 
-**Layar 1b — Nama.** Setelah kartu anggota dipilih, panel kecil bertanya
-`Halo! Siapa nama kamu?` dengan satu input teks (maks. 24 karakter) dan tombol
-`Mulai journey`. Nama disimpan per anggota; kosong → pakai kode peran. Nama
-dipakai untuk sapaan beranda dan header journey: `Halo, Farros — P2 Dungeon`.
-Nama bisa diubah dari header (`Ganti nama`) tanpa menimpa progres.
+**Layar 1b: Nama.** Nama default anggota sama dengan kodenya (`P1` → `P1`).
+Klik kartu langsung masuk journey tanpa dialog. Dialog nama hanya dibuka lewat
+tombol `Ganti nama` di header journey; nama di-trim, maksimal 24 karakter, dan
+disimpan per anggota. Kosong → fallback ke kode peran. Progres tidak ikut
+terhapus saat nama diganti.
 
-**Layar 2 — Journey.** Tiga kolom di desktop lebar:
+**Layar 2: Journey.** Tiga kolom di desktop lebar:
 
 - Kiri: timeline fase F0→F4, tiap fase berisi daftar milestone dengan status
   (selesai / sekarang / belum). Klik = buka detail.
-- Tengah: detail step — judul, fase, materi kuliah terkait, "Baca dulu" (tautan
+- Tengah: detail step, judul, fase, materi kuliah terkait, "Baca dulu" (tautan
   ke panduan + anchor), langkah kerja, perintah dengan tombol Salin, blok
   Expected, tombol `Tandai selesai`.
-- Kanan: konteks anggota — peran, branch, file milik, larangan (dari bagian
+- Kanan: konteks anggota, peran, branch, file milik, larangan (dari bagian
   Larangan panduan), target akhir (driver, skenario, layar) dengan thumbnail
   screenshot yang bisa dibuka besar.
 
 Header: nama anggota + peran, progress bar total, tombol `Ganti anggota`,
 `Reset progres`.
 
-**Layar 3 — Expected result.** Lightbox gambar screenshot penuh dengan nomor
+**Layar 3: Expected result.** Lightbox gambar screenshot penuh dengan nomor
 layar + deskripsi, navigasi panah, `Esc` menutup.
 
 Interaksi minimum yang dikerjakan: pilih anggota, pindah step, tandai selesai,
@@ -164,9 +171,11 @@ copy perintah, buka expected result, reset progres, keyboard (`1–5`, `Esc`,
   teks tetap 18px body (tidak diperkecil), tidak ada scroll horizontal di 360px.
 - Skala tipe lebih besar dari default: body 18px, judul layar 40–56px,
   judul step 28px, metadata 14px. Line-height 1.5 untuk teks baca.
-- Token di `:root`: latar gelap netral, aksen gacha (emas/ungu) untuk progres dan
-  rarity, teks utama kontras ≥ 7:1, teks sekunder ≥ 4.5:1. Diverifikasi lewat
+- Token Astryx netral dipakai untuk latar dan teks; aksen monokrom dipakai untuk fokus, status, dan progres supaya kontras tetap tinggi di tema terang dan gelap.
+  Status selengkapnya ada pada tabel arti field di aplikasi. Diverifikasi lewat
   `check_contrast` sebelum dinyatakan selesai.
+- Dial antislop: `ENERGY 1 / RHYTHM 2 / MOTION 1` (Mode Operate/Read). Fokus layar ada pada
+  langkah aktif; aksen dipakai untuk status, bukan dekorasi.
 - Kartu anggota memakai kode besar (72px) sebagai jangkar visual, bukan emoji.
 - Status memakai label teks + ikon bentuk (siram/centang), bukan warna saja.
 
@@ -214,7 +223,7 @@ copy perintah, buka expected result, reset progres, keyboard (`1–5`, `Esc`,
 - **Screenshot besar.** 18 PNG dari repo expected result bisa berat. Disalin
   apa adanya dulu; `loading="lazy"` + thumbnail `max-height` di kartu. Kompres
   hanya kalau ukuran total > 8 MB.
-- **Anchor panduan.** Slug heading GitHub untuk heading dengan `—` dan kode
+- **Anchor panduan.** Slug heading GitHub untuk heading yang memakai tanda pisah dan kode
   perlu dicocokkan manual; tautan yang tidak resolve diganti ke file tanpa
   anchor.
 - **Nama anggota.** Tidak ada di sumber, jadi diisi pengguna di layar 1b. Input
@@ -237,3 +246,22 @@ Anotasi Plannotator putaran 1:
    anggota di `localStorage` (`names`), dipakai sebagai sapaan (`Halo, Farros`)
    di beranda dan header journey. Nama bisa diganti tanpa menghapus progres;
    kosong → fallback kode peran. §7, §9, §10, §12 diperbarui.
+
+## Decisions 2026-11-22: implementasi React
+
+1. **Stack berubah dari HTML statis ke React 19 + Vite 8.** Alasan: UI interaktif tiga panel + dialog + lightbox lebih aman dengan state terpusat dan satu sumber data. `src/App.jsx` memegang semua state; `src/data/journey.js` tetap modul JS.
+2. **Astryx 0.7.17 dipakai untuk kontrol dan tipografi.** Tombol, badge, card, progress bar, divider, heading, dan text memakai `@astryxdesign/core`; tema `neutral` dipasang lewat `astryx-themes.js`. Wrapper flex/timeline tetap elemen biasa karena tidak ada komponen Astryx untuk komposisi itu, dan Astryx tidak menerima `className` (hanya `xstyle`).
+3. **Tema punya dua pilihan: terang dan gelap.** Token Astryx berisi `light-dark(...)`, jadi canvas tidak bisa memakainya langsung; `src/App.jsx` me-resolve token lewat elemen probe sebelum memberi warna ke ECharts, dan chart digambar ulang saat tema berubah.
+4. **Diagram fase punya dua berkas SVG** (`journey-flow-light.svg`, `journey-flow-dark.svg`) yang dipilih lewat `resolvedTheme` di `src/App.jsx`. Sumber tunggal `docs/journey-flow.mmd`; `docs/build-flow.mjs` mengganti token pele dengan palet literal per tema dan menyalin hasil ke `public/assets/`.
+5. **Progres tanpa backend.** `localStorage` key `gachaquest-tutor-v1`; nama per anggota; reset hanya menghapus `done` anggota tersebut.
+
+## Decisions 2026-11-23
+
+1. **Bun + Biome menggantikan npm, ESLint, dan Prettier.** `bun.lock` satu-satunya lockfile. Perintah resmi: `bun run dev`, `bun run build`, `bun run lint`, `bun run check`, `bun run diagram`. Alasan: dependency dan script sudah ada, toolchain lebih sedikit.
+2. **Nama default = kode anggota.** `pick(target)` langsung masuk journey; dialog nama hanya lewat tombol `Ganti nama`. `nameOf()` jatuh ke `target.code` bila nama kosong. Alasan: P1 sampai P5 sudah dikenal tim, tidak perlu prompt ekstra.
+3. **Shell full-screen dengan scroll area mandiri.** `html/body/#root` dan `.page` tidak scroll. `.picker`, `.timeline`, `.detail`, dan `.context` masing-masing punya `overflow-y: auto`, `overscroll-behavior: contain`, dan `scrollbar-gutter: stable`. `.main` dan `.journey` memakai `overflow: hidden`. Alasan: tiga panel tetap sejajar, tidak ada root scroll.
+4. **Motion mengikuti Mode Operate/Read.** Continuity lewat view transition saat pindah anggota dan ganti tema. Feedback lewat hover, press, dan perubahan state. Tidak ada scroll reveal atau loop. Semua gerak punya path `prefers-reduced-motion`.
+5. **Chart dan diagram mengikuti tema efektif.** `resolvedTheme` memilih SVG terang/gelap; ECharts di-repaint saat `signature`, `scheme`, atau `theme` berubah. Probe CSS dipakai karena token `light-dark()` tidak terbaca canvas.
+6. **Tanda pisah pada teks UI diganti tanda koma atau titik.** Berlaku juga untuk teks sumber yang disalin ke `journey.js`. Alasan: aturan R-02 antislop dan kaidah humanizer-indonesia.
+7. **Keputusan visual memakai alasan yang dapat ditulis satu baris.** Tipografi Figtree dari token Astryx dipilih karena bentuknya jelas untuk teks padat. Ikon SVG buatan sendiri dipakai karena panah dan centang harus konsisten dengan tipografi. Radius 6–16 px membedakan hierarchy tanpa membuat semua elemen pil. Bayangan dipakai hanya untuk elevasi dialog dan hover kartu. Cincin progres `conic-gradient` menyampaikan data; `CursorGlow` memberi feedback pointer desktop dan mati pada reduced motion.
+8. **Palet memakai token netral Astryx.** Aksen `light-dark(#1b1b1b, #f1f1f1)` dipakai untuk status, fokus, dan cincin progres; warna ini dibaca dari CSS, bukan dugaan visual.
