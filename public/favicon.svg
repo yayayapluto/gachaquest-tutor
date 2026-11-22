@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GachaQuest">
+  <rect width="64" height="64" rx="14" fill="#0b0f14"/>
+  <path d="M18 20h12v5h-7v6h6v5h-6v8h-5V20Z" fill="#e5edf5"/>
+  <path d="M46 20h-11v24h5V34h6v-5h-6v-4h6v-5Z" fill="#a3e635"/>
+  <circle cx="47" cy="46" r="3" fill="#67e8f9"/>
+</svg>
