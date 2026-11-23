@@ -1,5 +1,7 @@
 # Deploy Cloudflare Workers Builds
 
+**URL produksi:** https://tutor-gachaquest.yyypluto.my.id/
+
 Deployment memakai Git integration Cloudflare Workers Builds. Push ke branch produksi menjalankan build lalu deploy Worker aset statis. Tidak ada Actions, token, atau secret di repo.
 
 ## Pengaturan di Cloudflare

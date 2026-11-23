@@ -168,6 +168,8 @@ Pre-commit hook menjalankan `bun run smoke`, jadi commit gagal bila build atau a
 
 ## Deployment
 
+**URL produksi:** https://tutor-gachaquest.yyypluto.my.id/
+
 Deployment target: Cloudflare Workers Builds dengan Git integration. Detail lengkap ada di `docs/deploy-cloudflare.md`.
 
 1. Buka **Workers & Pages** → **Create** → **Workers** → **Connect to Git**.
